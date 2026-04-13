@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRM Advocacia — Documento de Funcionalidades</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fa; color: #1a1a2e; }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      color: white;
+      padding: 48px 40px;
+      text-align: center;
+    }
+    .header-icon {
+      width: 72px; height: 72px;
+      background: #2563eb;
+      border-radius: 18px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      margin-bottom: 20px;
+    }
+    .header h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; }
+    .header p { font-size: 1.05rem; color: #94a3b8; margin-top: 8px; }
+    .badge-new {
+      display: inline-block;
+      background: #22c55e;
+      color: white;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-top: 16px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* Container */
+    .container { max-width: 960px; margin: 0 auto; padding: 48px 24px; }
+
+    /* Section */
+    .section { margin-bottom: 48px; }
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title .num {
+      width: 32px; height: 32px;
+      background: #2563eb;
+      color: white;
+      border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .section-sub { color: #64748b; font-size: 0.92rem; margin-bottom: 20px; margin-left: 42px; }
+
+    /* Cards grid */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 22px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .card-icon { font-size: 1.8rem; margin-bottom: 12px; }
+    .card h3 { font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .card p { font-size: 0.85rem; color: #64748b; line-height: 1.6; }
+
+    /* Feature list */
+    .feature-list { list-style: none; }
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.9rem;
+      color: #334155;
+    }
+    .feature-list li:last-child { border-bottom: none; }
+    .check { color: #22c55e; font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+    /* Credential box */
+    .cred-box {
+      background: #0f172a;
+      border-radius: 14px;
+      padding: 28px 32px;
+      color: white;
+    }
+    .cred-box h3 { font-size: 1rem; font-weight: 600; color: #94a3b8; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cred-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .cred-label { font-size: 0.8rem; color: #64748b; width: 60px; flex-shrink: 0; }
+    .cred-value {
+      background: #1e293b;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: #38bdf8;
+      letter-spacing: 0.3px;
+    }
+
+    /* URL box */
+    .url-box {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 24px 28px;
+    }
+    .url-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; font-size: 0.9rem; }
+    .url-label { color: #64748b; font-weight: 600; width: 80px; flex-shrink: 0; }
+    .url-value { font-family: monospace; color: #2563eb; font-size: 0.88rem; }
+
+    /* Step list */
+    .steps { counter-reset: step; list-style: none; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+      color: #334155;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      background: #eff6ff;
+      color: #2563eb;
+      font-weight: 700;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    /* Tech pills */
+    .tech-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .pill {
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid #bfdbfe;
+    }
+    .pill.green { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .pill.purple { background: #faf5ff; color: #7e22ce; border-color: #e9d5ff; }
+    .pill.orange { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+
+    /* Divider */
+    .divider { border: none; border-top: 1px solid #e2e8f0; margin: 40px 0; }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 32px;
+      color: #94a3b8;
+      font-size: 0.82rem;
+      border-top: 1px solid #e2e8f0;
+      background: white;
+    }
+    footer strong { color: #475569; }
+
+    /* Highlight box */
+    .highlight {
+      background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      padding: 24px 28px;
+    }
+    .highlight h3 { font-size: 1rem; font-weight: 700; color: #1e40af; margin-bottom: 10px; }
+    .highlight p { font-size: 0.88rem; color: #334155; line-height: 1.7; }
+
+    @media (max-width: 600px) {
+      .header { padding: 32px 20px; }
+      .header h1 { font-size: 1.6rem; }
+      .container { padding: 32px 16px; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-icon">⚖️</div>
+  <h1>CRM Advocacia</h1>
+  <p>Sistema de Gestão Comercial para Escritórios de Advocacia</p>
+  <div class="badge-new">Versão 1.0 — Funcional</div>
+</div>
+
+<div class="container">
+
+  <!-- Acesso -->
+  <div class="section">
+    <div class="section-title"><span class="num">🔑</span> Acesso ao Sistema</div>
+    <p class="section-sub">Use as credenciais abaixo para entrar no sistema pela primeira vez.</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div class="cred-box">
+        <h3>Login Padrão (Administrador)</h3>
+        <div class="cred-row">
+          <span class="cred-label">E-mail</span>
+          <span class="cred-value">admin@crm.com</span>
+        </div>
+        <div class="cred-row">
+          <span class="cred-label">Senha</span>
+          <span class="cred-value">admin123</span>
+        </div>
+      </div>
+      <div class="url-box">
+        <p style="font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Endereços do Sistema</p>
+        <div class="url-row">
+          <span class="url-label">Frontend</span>
+          <span class="url-value">http://localhost:5173</span>
+        </div>
+        <div class="url-row">
+          <span class="url-label">API</span>
+          <span class="url-value">http://localhost:3001</span>
+        </div>
+        <div class="url-row">
+          <span class="url-label">Webhook</span>
+          <span class="url-value">/webhook/evolution</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- PARTE 1: Login -->
+  <div class="section">
+    <div class="section-title"><span class="num">1</span> Sistema de Login e Autenticação</div>
+    <p class="section-sub">Segurança JWT com controle de acesso por perfil de usuário.</p>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🔐</div>
+        <h3>Tela de Login</h3>
+        <p>Acesso protegido por e-mail e senha. Sem login não é possível acessar nenhuma parte do sistema.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🪙</div>
+        <h3>Token JWT</h3>
+        <p>Ao entrar, um token seguro é gerado e salvo no navegador. Todas as chamadas à API são autenticadas automaticamente.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">👤</div>
+        <h3>Perfis de Acesso</h3>
+        <p><strong>Admin</strong> — acesso total, incluindo gestão de usuários.<br><strong>Advogado</strong> — acesso às funcionalidades do dia a dia.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🚪</div>
+        <h3>Nome + Botão Sair</h3>
+        <p>O nome do usuário logado aparece no canto superior direito e na barra lateral, com botão para sair com segurança.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- PARTE 2: Chat -->
+  <div class="section">
+    <div class="section-title"><span class="num">2</span> Área de Chat — WhatsApp</div>
+    <p class="section-sub">Interface completa para visualizar e responder mensagens do WhatsApp diretamente no CRM.</p>
+
+    <div class="cards" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="card-icon">📋</div>
+        <h3>Lista de Conversas</h3>
+        <p>Coluna esquerda com foto, nome do contato (ou número), última mensagem e horário. Busca por nome ou número.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">💬</div>
+        <h3>Área de Mensagens</h3>
+        <p>Estilo WhatsApp: mensagens enviadas à direita em verde, recebidas à esquerda em cinza. Com horário de cada mensagem.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <h3>Tempo Real</h3>
+        <p>O chat atualiza automaticamente a cada 3 segundos. Novas mensagens recebidas via webhook aparecem sem precisar recarregar a página.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔗</div>
+        <h3>Vínculo com Lead</h3>
+        <p>Quando uma mensagem chega, o sistema identifica automaticamente o lead pelo número de telefone e exibe o nome no lugar do número.</p>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <h3>Como funciona o recebimento de mensagens?</h3>
+      <p>Quando alguém envia uma mensagem pelo WhatsApp, a Evolution API repassa para o CRM via webhook (<code>/webhook/evolution</code>). O sistema salva a mensagem, vincula ao lead (se existir) e ela aparece no chat em até 3 segundos.</p>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- PARTE 3: Evolution API -->
+  <div class="section">
+    <div class="section-title"><span class="num">3</span> Conexão com WhatsApp (Evolution API)</div>
+    <p class="section-sub">Configuração da integração WhatsApp em <strong>Configurações → WhatsApp</strong>.</p>
+
+    <div class="cards" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="card-icon">⚙️</div>
+        <h3>Configuração Técnica</h3>
+        <p>Campos para URL da Evolution API, API Key e nome da instância. Configuração salva no banco de dados.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📱</div>
+        <h3>QR Code</h3>
+        <p>Botão "Conectar WhatsApp" que cria a instância e exibe o QR Code para escanear com o celular.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔄</div>
+        <h3>Status Automático</h3>
+        <p>O status da conexão (Desconectado / Conectado) atualiza sozinho a cada 5 segundos. Ao conectar, o QR Code some.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔌</div>
+        <h3>Desconectar</h3>
+        <p>Botão para desconectar o WhatsApp a qualquer momento, sem perder o histórico de mensagens.</p>
+      </div>
+    </div>
+
+    <div class="card" style="background:#f8faff; border-color:#bfdbfe;">
+      <h3 style="margin-bottom:12px; color:#1e40af;">📲 Como conectar o WhatsApp</h3>
+      <ol class="steps">
+        <li>Acesse <strong>Configurações</strong> no menu lateral</li>
+        <li>Preencha a URL da Evolution API, API Key e nome da instância</li>
+        <li>Clique em <strong>"Conectar WhatsApp"</strong></li>
+        <li>Abra o WhatsApp no celular e vá em <strong>Dispositivos conectados</strong></li>
+        <li>Toque em <strong>Conectar dispositivo</strong> e escaneie o QR Code</li>
+        <li>O status muda automaticamente para <strong>Conectado ✅</strong></li>
+      </ol>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Outras funcionalidades -->
+  <div class="section">
+    <div class="section-title"><span class="num">+</span> Demais Funcionalidades do CRM</div>
+    <p class="section-sub">O sistema inclui um conjunto completo de ferramentas para gestão comercial.</p>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h3>Dashboard</h3>
+        <p>KPIs em tempo real: leads do mês, propostas, taxa de conversão, receita estimada e metas mensais com gráfico.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🗂️</div>
+        <h3>Funil de Vendas (Kanban)</h3>
+        <p>Quadro Kanban com 6 etapas. Arraste os cards entre colunas para mover leads pelo funil. Registro de motivo de perda.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">👥</div>
+        <h3>Leads & Clientes</h3>
+        <p>Cadastro completo com CPF/CNPJ, telefone, WhatsApp, origem, área do direito, observações e histórico.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📄</div>
+        <h3>Propostas</h3>
+        <p>Criação e envio de propostas de honorários, controle de status (rascunho / enviada / aceita / recusada).</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔔</div>
+        <h3>Follow-ups</h3>
+        <p>Agendamento de próximos contatos com alertas de tarefas vencidas. Histórico completo por lead.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📢</div>
+        <h3>Envio em Massa</h3>
+        <p>Disparo de mensagens WhatsApp para múltiplos leads com filtros por origem e status. Templates personalizáveis.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <h3>Relatórios</h3>
+        <p>Relatórios por período com receita por origem, área do direito e quantidade de leads. Exportação visual.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🛡️</div>
+        <h3>Gestão de Usuários</h3>
+        <p>Cadastro de advogados e admins, ativação/desativação de contas. Acesso exclusivo para administradores.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Tecnologias -->
+  <div class="section">
+    <div class="section-title"><span class="num">⚙</span> Tecnologias Utilizadas</div>
+    <p class="section-sub">Stack moderno, leve e sem custos de licença.</p>
+
+    <div class="card">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+        <div>
+          <p style="font-size:0.78rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:10px;">Backend</p>
+          <div class="tech-row">
+            <span class="pill">Node.js</span>
+            <span class="pill">Express</span>
+            <span class="pill">SQLite</span>
+            <span class="pill">JWT</span>
+            <span class="pill">bcryptjs</span>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:0.78rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:10px;">Frontend</p>
+          <div class="tech-row">
+            <span class="pill green">React 18</span>
+            <span class="pill green">Vite</span>
+            <span class="pill green">Tailwind CSS</span>
+            <span class="pill green">Recharts</span>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:0.78rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:10px;">Integração WhatsApp</p>
+          <div class="tech-row">
+            <span class="pill purple">Evolution API</span>
+            <span class="pill purple">Webhook</span>
+            <span class="pill purple">Polling 3s</span>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:0.78rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:10px;">Infraestrutura</p>
+          <div class="tech-row">
+            <span class="pill orange">Docker</span>
+            <span class="pill orange">Railway</span>
+            <span class="pill orange">SQLite WAL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<footer>
+  <p><strong>CRM Advocacia</strong> — Sistema de Gestão Comercial</p>
+  <p style="margin-top:6px;">Desenvolvido com Node.js + React · Banco de dados SQLite · Integração WhatsApp via Evolution API</p>
+</footer>
+
+</body>
+</html>

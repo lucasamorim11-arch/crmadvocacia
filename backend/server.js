@@ -3,7 +3,10 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { getDb, initDb } = require('./database');
+const { authMiddleware } = require('./middleware/auth');
 
+const authRouter = require('./routes/auth');
+const usuariosRouter = require('./routes/usuarios');
 const leadsRouter = require('./routes/leads');
 const propostasRouter = require('./routes/propostas');
 const followupRouter = require('./routes/followup');
@@ -14,27 +17,15 @@ const configuracoesRouter = require('./routes/configuracoes');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Rotas
-app.use('/api/leads', leadsRouter);
-app.use('/api/propostas', propostasRouter);
-app.use('/api/followup', followupRouter);
-app.use('/api/whatsapp', whatsappRouter);
-app.use('/api/dashboard', dashboardRouter);
-app.use('/api/configuracoes', configuracoesRouter);
+// Rotas públicas (sem autenticação)
+app.use('/api/auth/login', authRouter);
+app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Webhook Evolution API
+// Webhook Evolution API (sem autenticação)
 app.post('/webhook/evolution', async (req, res) => {
   const db = getDb();
   const payload = req.body;
@@ -64,6 +55,23 @@ app.post('/webhook/evolution', async (req, res) => {
 
   res.sendStatus(200);
 });
+
+// Middleware JWT para todas as demais rotas /api
+app.use('/api', (req, res, next) => {
+  // /api/auth/login já foi tratado acima; aqui protege todas as outras
+  if (req.path === '/auth/login') return next();
+  authMiddleware(req, res, next);
+});
+
+// Rotas protegidas
+app.use('/api/auth', authRouter);
+app.use('/api/usuarios', usuariosRouter);
+app.use('/api/leads', leadsRouter);
+app.use('/api/propostas', propostasRouter);
+app.use('/api/followup', followupRouter);
+app.use('/api/whatsapp', whatsappRouter);
+app.use('/api/dashboard', dashboardRouter);
+app.use('/api/configuracoes', configuracoesRouter);
 
 // Servir frontend em produção
 if (process.env.NODE_ENV === 'production') {

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Save, RefreshCw } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Save, RefreshCw, Wifi, WifiOff, QrCode } from 'lucide-react'
 import api from '../utils/api'
 import toast from 'react-hot-toast'
 
@@ -11,7 +11,11 @@ export default function Configuracoes() {
     evolution_instance: 'crm-advocacia'
   })
   const [loading, setLoading] = useState(false)
-  const [testando, setTestando] = useState(false)
+  const [waStatus, setWaStatus] = useState(null)
+  const [qrcode, setQrcode] = useState(null)
+  const [carregandoQr, setCarregandoQr] = useState(false)
+  const [conectando, setConectando] = useState(false)
+  const pollingRef = useRef(null)
 
   useEffect(() => {
     api.get('/configuracoes').then(r => {
@@ -19,9 +23,33 @@ export default function Configuracoes() {
         ...c,
         nome_escritorio: r.data.nome_escritorio || '',
         evolution_url: r.data.evolution_url || 'http://localhost:8080',
+        evolution_key: r.data.evolution_key || '',
         evolution_instance: r.data.evolution_instance || 'crm-advocacia'
       }))
     })
+    fetchStatus()
+  }, [])
+
+  async function fetchStatus() {
+    try {
+      const r = await api.get('/whatsapp/status')
+      setWaStatus(r.data)
+      return r.data
+    } catch {
+      setWaStatus({ state: 'offline' })
+      return { state: 'offline' }
+    }
+  }
+
+  useEffect(() => {
+    pollingRef.current = setInterval(async () => {
+      const st = await fetchStatus()
+      if (st?.state === 'open') {
+        setQrcode(null)
+        clearInterval(pollingRef.current)
+      }
+    }, 5000)
+    return () => clearInterval(pollingRef.current)
   }, [])
 
   const set = (k, v) => setConfig(c => ({ ...c, [k]: v }))
@@ -39,17 +67,36 @@ export default function Configuracoes() {
     }
   }
 
-  async function testarConexao() {
-    setTestando(true)
+  async function conectarWhatsapp() {
+    setConectando(true)
+    setQrcode(null)
     try {
-      const r = await api.get('/whatsapp/status')
-      toast.success(`Conexão OK! Estado: ${r.data.state || 'desconhecido'}`)
+      await api.post('/whatsapp/criar-instancia')
+      toast.success('Instância criada!')
+      await fetchStatus()
+      setCarregandoQr(true)
+      const r = await api.get('/whatsapp/qrcode')
+      setQrcode(r.data)
     } catch (err) {
-      toast.error(`Falha na conexão: ${err.message}`)
+      toast.error('Erro ao conectar: ' + err.message)
     } finally {
-      setTestando(false)
+      setConectando(false)
+      setCarregandoQr(false)
     }
   }
+
+  async function desconectar() {
+    try {
+      await api.post('/whatsapp/desconectar')
+      toast.success('WhatsApp desconectado')
+      setQrcode(null)
+      fetchStatus()
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const isConnected = waStatus?.state === 'open'
 
   return (
     <div className="max-w-2xl fade-in">
@@ -68,10 +115,72 @@ export default function Configuracoes() {
           </div>
         </div>
 
+        {/* WhatsApp — Conexão */}
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-semibold">Conexão WhatsApp</h2>
+            <div className={`flex items-center gap-1.5 text-sm font-medium ${isConnected ? 'text-green-600' : 'text-red-500'}`}>
+              {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
+              {isConnected ? 'Conectado' : waStatus?.state === 'offline' ? 'Offline' : (waStatus?.state || 'Desconectado')}
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 mb-5">Escaneie o QR Code para conectar o WhatsApp</p>
+
+          {!isConnected && (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={conectarWhatsapp}
+                disabled={conectando || carregandoQr}
+                className="btn-primary flex items-center gap-2"
+              >
+                <QrCode size={16} />
+                {conectando || carregandoQr ? 'Aguarde...' : 'Conectar WhatsApp'}
+              </button>
+
+              {qrcode && (
+                <div className="border border-gray-200 rounded-xl p-5 text-center space-y-3">
+                  <p className="text-sm font-medium text-gray-700">Escaneie o QR Code</p>
+                  {qrcode.qrcode?.base64 ? (
+                    <img
+                      src={qrcode.qrcode.base64}
+                      alt="QR Code WhatsApp"
+                      className="mx-auto rounded-xl w-56 h-56 object-contain"
+                    />
+                  ) : (
+                    <div className="bg-gray-50 rounded-lg p-3 text-xs font-mono break-all text-gray-500">
+                      {JSON.stringify(qrcode)}
+                    </div>
+                  )}
+                  <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-700 text-left space-y-1">
+                    <p className="font-semibold">Como escanear:</p>
+                    <p>1. Abra o WhatsApp no celular</p>
+                    <p>2. Toque em <strong>Dispositivos conectados</strong></p>
+                    <p>3. Toque em <strong>Conectar dispositivo</strong></p>
+                    <p>4. Aponte a câmera para o QR Code acima</p>
+                  </div>
+                  <p className="text-xs text-gray-400">O status atualiza automaticamente a cada 5 segundos</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isConnected && (
+            <div className="space-y-3">
+              <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-sm text-green-800">
+                ✅ WhatsApp conectado e pronto para enviar e receber mensagens!
+              </div>
+              <button type="button" onClick={desconectar} className="btn-danger text-sm">
+                Desconectar WhatsApp
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Evolution API */}
         <div className="card p-5">
-          <h2 className="font-semibold mb-1">Evolution API (WhatsApp)</h2>
-          <p className="text-sm text-gray-500 mb-4">Configure a integração com o WhatsApp via Evolution API</p>
+          <h2 className="font-semibold mb-1">Evolution API</h2>
+          <p className="text-sm text-gray-500 mb-4">Configurações técnicas da integração</p>
 
           <div className="space-y-4">
             <div>
@@ -81,39 +190,22 @@ export default function Configuracoes() {
             </div>
             <div>
               <label className="label">API Key</label>
-              <input className="input" type="password" value={config.evolution_key} onChange={e => set('evolution_key', e.target.value)} placeholder="Sua API Key da Evolution API" />
+              <input className="input" type="password" value={config.evolution_key} onChange={e => set('evolution_key', e.target.value)} placeholder="Sua API Key" />
             </div>
             <div>
               <label className="label">Nome da Instância</label>
               <input className="input" value={config.evolution_instance} onChange={e => set('evolution_instance', e.target.value)} placeholder="crm-advocacia" />
             </div>
-
-            <button type="button" onClick={testarConexao} disabled={testando} className="btn-secondary flex items-center gap-2 text-sm">
-              <RefreshCw size={14} className={testando ? 'animate-spin' : ''} />
-              {testando ? 'Testando...' : 'Testar Conexão'}
-            </button>
           </div>
-        </div>
-
-        {/* Docker info */}
-        <div className="card p-5 bg-blue-50 border-blue-100">
-          <h2 className="font-semibold text-blue-800 mb-3">Subir Evolution API com Docker</h2>
-          <p className="text-sm text-blue-700 mb-3">Use o arquivo <code className="bg-blue-100 px-1 rounded">docker-compose.yml</code> na raiz do projeto:</p>
-          <div className="bg-white rounded-lg p-3 font-mono text-xs text-gray-700 space-y-1">
-            <div>$ cd /caminho/para/crm-advocacia</div>
-            <div>$ docker compose up -d evolution</div>
-          </div>
-          <p className="text-xs text-blue-600 mt-3">A Evolution API ficará disponível em <strong>http://localhost:8080</strong></p>
         </div>
 
         {/* Webhook */}
         <div className="card p-5">
-          <h2 className="font-semibold mb-2">Webhook</h2>
-          <p className="text-sm text-gray-600 mb-2">Configure este webhook na Evolution API para receber mensagens:</p>
-          <div className="bg-gray-50 rounded-lg p-3 font-mono text-sm text-gray-700">
-            http://localhost:3001/webhook/evolution
+          <h2 className="font-semibold mb-2">URL do Webhook</h2>
+          <p className="text-sm text-gray-600 mb-2">Configure este endereço na Evolution API para receber mensagens em tempo real:</p>
+          <div className="bg-gray-50 rounded-lg p-3 font-mono text-sm text-gray-700 select-all">
+            {window.location.origin.replace('5173', '3001')}/webhook/evolution
           </div>
-          <p className="text-xs text-gray-400 mt-2">Em produção, substitua <code>localhost:3001</code> pelo endereço do seu servidor</p>
         </div>
 
         <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">

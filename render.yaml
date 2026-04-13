@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: crm-advocacia
+    runtime: node
+    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /opt/render/project/src/backend/crm.db
+      - key: JWT_SECRET
+        generateValue: true
+    disk:
+      name: crm-data
+      mountPath: /opt/render/project/src/backend
+      sizeGB: 1

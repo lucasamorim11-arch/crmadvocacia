@@ -1,9 +1,10 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const DB_PATH = process.env.NODE_ENV === 'production'
-  ? path.join('/data', 'crm.db')
-  : path.join(__dirname, 'crm.db');
+const DB_PATH = process.env.DB_PATH
+  || (process.env.NODE_ENV === 'production'
+    ? path.join('/data', 'crm.db')
+    : path.join(__dirname, 'crm.db'));
 
 let _db;
 
@@ -157,6 +158,31 @@ async function initDb() {
     await db.run(ins, ['evolution_key', '']);
     await db.run(ins, ['evolution_instance', 'crm-advocacia']);
     await db.run(ins, ['nome_escritorio', 'Escritório de Advocacia']);
+  }
+
+  // Tabela de usuários
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS usuarios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      senha_hash TEXT NOT NULL,
+      perfil TEXT DEFAULT 'advogado',
+      ativo INTEGER DEFAULT 1,
+      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Seed admin padrão
+  const userCount = await db.get('SELECT COUNT(*) as c FROM usuarios');
+  if (userCount.c === 0) {
+    const bcrypt = require('bcryptjs');
+    const senhaHash = await bcrypt.hash('admin123', 10);
+    await db.run(
+      "INSERT INTO usuarios (nome, email, senha_hash, perfil, ativo) VALUES (?, ?, ?, 'admin', 1)",
+      ['Administrador', 'admin@crm.com', senhaHash]
+    );
+    console.log('Usuário admin criado: admin@crm.com / admin123');
   }
 }
 

@@ -66,6 +66,42 @@ router.post('/criar-instancia', async (req, res) => {
   }
 });
 
+// Listar conversas (agrupadas por número)
+router.get('/conversas', async (req, res) => {
+  const db = getDb();
+  try {
+    const conversas = await db.all(`
+      SELECT
+        m.numero,
+        m.lead_id,
+        l.nome as lead_nome,
+        MAX(m.timestamp) as ultima_mensagem_em,
+        (SELECT mensagem FROM mensagens WHERE numero = m.numero ORDER BY timestamp DESC LIMIT 1) as ultima_mensagem,
+        (SELECT direcao FROM mensagens WHERE numero = m.numero ORDER BY timestamp DESC LIMIT 1) as ultima_direcao,
+        COUNT(*) as total_mensagens
+      FROM mensagens m
+      LEFT JOIN leads l ON l.id = m.lead_id
+      GROUP BY m.numero
+      ORDER BY ultima_mensagem_em DESC
+    `);
+    res.json(conversas);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Desconectar instância
+router.post('/desconectar', async (req, res) => {
+  try {
+    const config = await getEvolutionConfig();
+    const api = evolutionApi(config);
+    await api.delete(`/instance/logout/${config.instance}`);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(503).json({ error: 'Erro ao desconectar', details: err.message });
+  }
+});
+
 // Listar mensagens de um lead ou número
 router.get('/mensagens', async (req, res) => {
   const db = getDb();
