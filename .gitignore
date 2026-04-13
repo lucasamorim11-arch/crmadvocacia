@@ -1,0 +1,9 @@
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+frontend/dist/
+backend/crm.db
+backend/crm.db-shm
+backend/crm.db-wal
+.env
+*.log
