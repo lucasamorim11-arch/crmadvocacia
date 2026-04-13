@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const path = require('path');
 
 const DB_PATH = process.env.DB_PATH
@@ -10,7 +10,9 @@ let _db;
 
 function getRawDb() {
   if (!_db) {
-    _db = new sqlite3.Database(DB_PATH);
+    _db = new Database(DB_PATH);
+    _db.pragma('journal_mode = WAL');
+    _db.pragma('foreign_keys = ON');
   }
   return _db;
 }
@@ -18,39 +20,24 @@ function getRawDb() {
 function getDb() {
   const raw = getRawDb();
   return {
-    get: (sql, params = []) =>
-      new Promise((resolve, reject) => {
-        raw.get(sql, params, (err, row) => (err ? reject(err) : resolve(row)));
-      }),
-    all: (sql, params = []) =>
-      new Promise((resolve, reject) => {
-        raw.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
-      }),
-    run: (sql, params = []) =>
-      new Promise((resolve, reject) => {
-        raw.run(sql, params, function (err) {
-          if (err) reject(err);
-          else resolve({ lastInsertRowid: this.lastID, changes: this.changes });
-        });
-      }),
-    exec: (sql) =>
-      new Promise((resolve, reject) => {
-        raw.exec(sql, (err) => (err ? reject(err) : resolve()));
-      }),
+    get: (sql, params = []) => {
+      return Promise.resolve(raw.prepare(sql).get(...params) || null);
+    },
+    all: (sql, params = []) => {
+      return Promise.resolve(raw.prepare(sql).all(...params));
+    },
+    run: (sql, params = []) => {
+      const info = raw.prepare(sql).run(...params);
+      return Promise.resolve({ lastInsertRowid: info.lastInsertRowid, changes: info.changes });
+    },
+    exec: (sql) => {
+      raw.exec(sql);
+      return Promise.resolve();
+    },
   };
 }
 
 async function initDb() {
-  const raw = getRawDb();
-
-  // Enable WAL and foreign keys synchronously via serialize
-  await new Promise((resolve, reject) => {
-    raw.serialize(() => {
-      raw.run('PRAGMA journal_mode = WAL');
-      raw.run('PRAGMA foreign_keys = ON', (err) => (err ? reject(err) : resolve()));
-    });
-  });
-
   const db = getDb();
 
   await db.exec(`
@@ -137,6 +124,16 @@ async function initDb() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(mes, ano)
     );
+
+    CREATE TABLE IF NOT EXISTS usuarios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      senha_hash TEXT NOT NULL,
+      perfil TEXT DEFAULT 'advogado',
+      ativo INTEGER DEFAULT 1,
+      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Seed templates padrão
@@ -159,19 +156,6 @@ async function initDb() {
     await db.run(ins, ['evolution_instance', 'crm-advocacia']);
     await db.run(ins, ['nome_escritorio', 'Escritório de Advocacia']);
   }
-
-  // Tabela de usuários
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS usuarios (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nome TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      senha_hash TEXT NOT NULL,
-      perfil TEXT DEFAULT 'advogado',
-      ativo INTEGER DEFAULT 1,
-      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
 
   // Seed admin padrão
   const userCount = await db.get('SELECT COUNT(*) as c FROM usuarios');
